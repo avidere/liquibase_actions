@@ -24,7 +24,7 @@ jobs:
         with:
             version: '4.33.0'
             edition: 'oss'
-      - run: liquibase update --changelog-file=changelog.xml --url=jdbc:h2:mem:test
+      - run: ls -lrt /home/runner/work/liquibase_actions/liquibase_actions/lib/
 
       - name: Run Liquibase Update
         env:
