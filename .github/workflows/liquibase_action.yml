@@ -23,7 +23,8 @@ jobs:
       - name: Download Liquibase
         run: |
           curl -sL https://github.com/liquibase/liquibase/releases/download/v4.30.0/liquibase-4.30.0.tar.gz | tar xz
-          sudo mv liquibase /usr/local/bin/liquibase
+          sudo mv liquibase-4.30.0 /opt/liquibase
+          sudo ln -s /opt/liquibase/liquibase /usr/local/bin/liquibase
 
       - name: Run Liquibase Update
         env:
