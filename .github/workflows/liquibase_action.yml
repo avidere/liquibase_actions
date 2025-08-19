@@ -20,11 +20,11 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Download Liquibase
-        run: |
-          curl -sL https://github.com/liquibase/liquibase/releases/download/v4.30.0/liquibase-4.30.0.tar.gz | tar xz
-          sudo mv liquibase-4.30.0 /opt/liquibase
-          sudo ln -s /opt/liquibase/liquibase /usr/local/bin/liquibase
+      - uses: liquibase/setup-liquibase@v1
+        with:
+            version: '4.33.0'
+            edition: 'oss'
+      - run: liquibase update --changelog-file=changelog.xml --url=jdbc:h2:mem:test
 
       - name: Run Liquibase Update
         env:
