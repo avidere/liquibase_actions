@@ -1,7 +1,8 @@
 name: Liquibase MySQL Migration
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [ main ]
 
 jobs:
   liquibase-update:
