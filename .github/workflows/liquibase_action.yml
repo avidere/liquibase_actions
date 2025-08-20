@@ -1,56 +1,31 @@
 name: Liquibase MySQL Migration
 
 on:
-  workflow_call:
-    inputs:
-      changelog:
-        required: true
-        type: string
-        description: "Path to Liquibase changelog file (e.g., changelog.xml)"
-      url:
-        required: true
-        type: string
-        description: "JDBC URL for MySQL (e.g., jdbc:mysql://localhost:3306/testdb)"
-      username:
-        required: true
-        type: string
-        description: "Database username"
-      password:
-        required: true
-        type: string
-        description: "Database password"
-    secrets:
-      mysql_password:
-        required: false
+  workflow_dispatch:
 
 jobs:
-  liquibase:
+  liquibase-update:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
+      - name: Setup Liquibase
+        uses: liquibase/setup-liquibase@v1
         with:
-          distribution: temurin
-          java-version: '17'
+          version: 4.33.0
 
-      - uses: liquibase/setup-liquibase@v1
-        with:
-          version: '4.33.0'
-          edition: 'oss'
-                
-      - name: Download MySQL JDBC driver
+      - name: Download MySQL JDBC Driver
         run: |
-          curl -L -o mysql-connector-j.jar https://repo1.maven.org/maven2/mysql/mysql-connector-j/8.0.30/mysql-connector-j-8.0.30.jar
+          mkdir -p lib
+          curl -L https://repo1.maven.org/maven2/mysql/mysql-connector-j/8.0.30/mysql-connector-j-8.0.30.jar -o lib/mysql-connector-j-8.0.30.jar
 
       - name: Run Liquibase Update
         run: |
           liquibase \
-            --changeLogFile=${{ inputs.changelog }} \
-            --url=${{ inputs.url }} \
-            --username=${{ inputs.username }} \
-            --password=${{ inputs.password || secrets.mysql_password }} \
-            --classpath=mysql-connector-j.jar \
+            --classpath=lib/mysql-connector-j-8.0.30.jar \
+            --url="jdbc:mysql://localhost:3300/onlinebookstore" \
+            --username=root \
+            --password=root \
+            --changeLogFile=changelog/changelog.xml \
             update
