@@ -6,7 +6,7 @@ on:
 
 jobs:
   run-liquibase:
-    uses: ./.github/workflows/liquibase.yml
+    uses: ./.github/workflows/liquibase_action.yml
     with:
       changelog: "changelog.xml"
       url: "jdbc:mysql://localhost:3300/onlinebookstore"
