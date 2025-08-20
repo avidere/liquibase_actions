@@ -36,11 +36,14 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Liquibase via brew
+      - name: Install Liquibase
         run: |
-          brew install liquibase
+          curl -sL https://github.com/liquibase/liquibase/releases/download/v4.30.0/liquibase-4.30.0.tar.gz | tar xz
+          sudo mv liquibase /opt/liquibase
+          sudo ln -s /opt/liquibase/liquibase /usr/local/bin/liquibase
+          chmod +x /usr/local/bin/liquibase
           liquibase --version
-
+          
       - name: Download MySQL JDBC driver
         run: |
           curl -L -o mysql-connector-j.jar https://repo1.maven.org/maven2/mysql/mysql-connector-j/8.0.30/mysql-connector-j-8.0.30.jar
