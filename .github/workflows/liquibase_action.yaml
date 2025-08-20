@@ -22,6 +22,10 @@ on:
         required: false
         type: string
         default: changelog/changelog.xml
+      command:
+        required: false
+        type: string
+        default: update
 
 jobs:
   liquibase-update:
@@ -37,19 +41,17 @@ jobs:
           mkdir -p /opt/liquibase
           unzip liquibase-4.33.0.zip -d /opt/liquibase
           echo "/opt/liquibase" >> $GITHUB_PATH
-          ls -l /opt/liquibase  # Debug
 
       - name: Download MySQL JDBC Driver
         run: |
           wget -O /opt/liquibase/lib/mysql-connector-j-9.3.0.jar \
             https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/9.3.0/mysql-connector-j-9.3.0.jar
-          ls -l /opt/liquibase/lib
 
-      - name: Run Liquibase Update
+      - name: Run Liquibase
         run: |
           liquibase \
             --url="jdbc:mysql://${{ inputs.db_host }}:${{ inputs.db_port }}/${{ inputs.db_name }}" \
             --username="${{ inputs.db_user }}" \
             --password="${{ inputs.db_pass }}" \
             --changeLogFile=${{ inputs.changelog_file }} \
-            update
+            ${{ inputs.command }}
