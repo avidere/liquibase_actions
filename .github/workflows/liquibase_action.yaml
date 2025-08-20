@@ -11,19 +11,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: setup liquibase
+      - name: Setup Liquibase
         run: |
           wget https://github.com/liquibase/liquibase/releases/download/v4.33.0/liquibase-4.33.0.zip
           mkdir -p /opt/liquibase
           unzip liquibase-4.33.0.zip -d /opt/liquibase
           echo "/opt/liquibase" >> $GITHUB_PATH
-          ls -l /opt/liquibase  # Debug: confirm extraction
+          ls -l /opt/liquibase  # Debug
 
       - name: Download MySQL JDBC Driver
         run: |
           liquibase --version
           mkdir -p lib
-          wget https://repo1.maven.org/maven2/mysql/mysql-connector-j/8.0.30/mysql-connector-j-8.0.30.jar -o /home/runner/work/liquibase_actions/liquibase_actions/lib/mysql-connector-j-8.0.30.jar
+          wget -O lib/mysql-connector-j-8.0.30.jar \
+            https://repo1.maven.org/maven2/mysql/mysql-connector-j/8.0.30/mysql-connector-j-8.0.30.jar
+          ls -l lib  # Debug to confirm driver is there
 
       - name: Run Liquibase Update
         run: |
