@@ -28,7 +28,6 @@ jobs:
       - name: Run Liquibase Update
         run: |
           liquibase \
-            --classpath=lib/mysql-connector-j-8.0.30.jar \
             --url="jdbc:mysql://localhost:3300/onlinebookstore" \
             --username=root \
             --password=root \
