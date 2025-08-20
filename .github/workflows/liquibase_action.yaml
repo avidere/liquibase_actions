@@ -16,6 +16,11 @@ jobs:
           wget https://github.com/liquibase/liquibase/releases/download/v4.33.0/liquibase-4.33.0.zip
           mkdir -p /opt/liquibase
           unzip liquibase-4.33.0.zip -d /opt/liquibase
+          echo "/opt/liquibase" >> $GITHUB_PATH
+          ls -l /opt/liquibase  # Debug: confirm extraction
+
+      - name: Verify Liquibase Installation
+        run: liquibase --version
      
           
       - name: Download MySQL JDBC Driver
