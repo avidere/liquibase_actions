@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <changeSet  author="liquibase-docs"  id="tagDatabase-example">
+        <tagDatabase  tag="version_1.3"/>
+    </changeSet>
+    <changeSet id="1-create-employee-table" author="avinash">
+        <sqlFile path="dbscripts/create_table1.sql"/>
+    <rollback>
+        <sqlFile path="rollback/drop_table1.sql"/>
+    </rollback>
+    </changeSet>
+    <changeSet id="2-create-employee-table" author="avinash">
+        <sqlFile path="dbscripts/create_table2.sql"/>
+    <rollback>
+        <sqlFile path="rollback/drop_table2.sql"/>
+    </rollback>
+    </changeSet>
+</databaseChangeLog>
