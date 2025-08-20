@@ -31,6 +31,6 @@ jobs:
             --url="jdbc:mysql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}" \
             --username="${{ secrets.DB_USER }}" \
             --password="${{ secrets.DB_PASS }}" \
-            --changeLogFile=chagelog/changelog.xml \
+            --changeLogFile=changelog/changelog.xml \
             update
 
