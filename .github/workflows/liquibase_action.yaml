@@ -26,12 +26,11 @@ jobs:
           ls -l /opt/liquibase/lib
 
       - name: Run Liquibase Update
-        env:
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_PORT: ${{ secrets.DB_PORT }}
-          DB_NAME: ${{ secrets.DB_NAME }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASS: ${{ secrets.DB_PASS }}
         run: |
-          liquibase --defaultsFile=liquibase.properties update
+          liquibase \
+            --url="jdbc:mysql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}" \
+            --username="${{ secrets.DB_USER }}" \
+            --password="${{ secrets.DB_PASS }}" \
+            --changeLogFile=changelog.xml \
+            update
 
