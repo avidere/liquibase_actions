@@ -1,40 +1,57 @@
-name: Liquibase Migration
+name: Liquibase MySQL Migration
 
 on:
-  push:
-    branches:
-      - main   # Run when changes are pushed to main
-  workflow_dispatch:   # Allow manual trigger
+  workflow_call:
+    inputs:
+      changelog:
+        required: true
+        type: string
+        description: "Path to Liquibase changelog file (e.g., changelog.xml)"
+      url:
+        required: true
+        type: string
+        description: "JDBC URL for MySQL (e.g., jdbc:mysql://localhost:3306/testdb)"
+      username:
+        required: true
+        type: string
+        description: "Database username"
+      password:
+        required: true
+        type: string
+        description: "Database password"
+    secrets:
+      mysql_password:
+        required: false
 
 jobs:
-  migrate:
+  liquibase:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: '17'
 
-      - uses: liquibase/setup-liquibase@v1
-        with:
-            version: '4.33.0'
-            edition: 'oss'
-      - run: ls -lrt /home/runner/work/liquibase_actions/liquibase_actions/lib/
+      - name: Install Liquibase
+        run: |
+          curl -sL https://github.com/liquibase/liquibase/releases/download/v4.30.0/liquibase-4.30.0.tar.gz | tar xz
+          sudo mv liquibase /usr/local/bin/liquibase
+          liquibase --version
+
+      - name: Download MySQL JDBC driver
+        run: |
+          curl -L -o mysql-connector-j.jar https://repo1.maven.org/maven2/mysql/mysql-connector-j/8.0.30/mysql-connector-j-8.0.30.jar
 
       - name: Run Liquibase Update
-        env:
-          LB_URL: ${{ secrets.LB_URL }}
-          LB_USERNAME: ${{ secrets.LB_USERNAME }}
-          LB_PASSWORD: ${{ secrets.LB_PASSWORD }}
         run: |
           liquibase \
-            --url=$LB_URL \
-            --username=$LB_USERNAME \
-            --password=$LB_PASSWORD \
-            --changelog-file=changelog/changelog.xml \
+            --changeLogFile=${{ inputs.changelog }} \
+            --url=${{ inputs.url }} \
+            --username=${{ inputs.username }} \
+            --password=${{ inputs.password || secrets.mysql_password }} \
+            --classpath=mysql-connector-j.jar \
             update
