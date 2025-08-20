@@ -4,7 +4,7 @@ stages:
     - type:liquibase
       command:status
       cmdArgs:{verbose:true, changelog-file:"${chaangelog}"}
-  validation:
+  validation
     actions:
     - type: liquibase
       command: validate
