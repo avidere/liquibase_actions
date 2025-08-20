@@ -21,11 +21,9 @@ jobs:
 
       - name: Download MySQL JDBC Driver
         run: |
-          liquibase --version
           mkdir -p lib
-          wget -O lib/mysql-connector-j-8.0.30.jar \
-            https://repo1.maven.org/maven2/mysql/mysql-connector-j/8.0.30/mysql-connector-j-8.0.30.jar
-          ls -l lib  # Debug to confirm driver is there
+          wget https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/9.3.0/mysql-connector-j-9.3.0.jar
+          ls -lrt
 
       - name: Run Liquibase Update
         run: |
