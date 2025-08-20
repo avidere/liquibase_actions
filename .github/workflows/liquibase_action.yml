@@ -16,7 +16,7 @@ jobs:
           wget https://github.com/liquibase/liquibase/releases/download/v4.33.0/liquibase-4.33.0.zip
           unzip liquibase-4.33.0.zip
           rm liquibase-4.33.0.zip
-          export PATH=$PATH:/opt/liquibase
+          echo "$GITHUB_WORKSPACE/liquibase" >> $GITHUB_PATH
           liquibase --version
 
 
