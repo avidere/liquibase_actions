@@ -1,12 +1,32 @@
-name: Liquibase MySQL Migration
+name: Liquibase Migration
 
 on:
-  push:
-    branches: [ main ]
+  workflow_call:
+    inputs:
+      db_host:
+        required: true
+        type: string
+      db_port:
+        required: true
+        type: string
+      db_name:
+        required: true
+        type: string
+      db_user:
+        required: true
+        type: string
+      db_pass:
+        required: true
+        type: string
+      changelog_file:
+        required: false
+        type: string
+        default: changelog/changelog.xml
 
 jobs:
   liquibase-update:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -28,9 +48,8 @@ jobs:
       - name: Run Liquibase Update
         run: |
           liquibase \
-            --url="jdbc:mysql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}" \
-            --username="${{ secrets.DB_USER }}" \
-            --password="${{ secrets.DB_PASS }}" \
-            --changeLogFile=changelog/changelog.xml \
+            --url="jdbc:mysql://${{ inputs.db_host }}:${{ inputs.db_port }}/${{ inputs.db_name }}" \
+            --username="${{ inputs.db_user }}" \
+            --password="${{ inputs.db_pass }}" \
+            --changeLogFile=${{ inputs.changelog_file }} \
             update
-
