@@ -38,10 +38,11 @@ jobs:
 
       - name: Install Liquibase
         run: |
-          curl -sL https://github.com/liquibase/liquibase/releases/download/v4.30.0/liquibase-4.30.0.tar.gz | tar xz
-          sudo mv liquibase /opt/liquibase
-          sudo ln -s /opt/liquibase/liquibase /usr/local/bin/liquibase
-          liquibase --version
+            curl -sL https://github.com/liquibase/liquibase/releases/download/v4.30.0/liquibase-4.30.0.tar.gz | tar xz
+            sudo mv liquibase /opt/liquibase
+            sudo ln -s /opt/liquibase/liquibase /usr/local/bin/liquibase
+            ls -l /opt/liquibase   # 👈 Debug: show what's inside
+            liquibase --version
 
       - name: Download MySQL JDBC driver
         run: |
