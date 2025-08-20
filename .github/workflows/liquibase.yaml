@@ -11,6 +11,5 @@ jobs:
       changelog: "changelog.xml"
       url: "jdbc:mysql://localhost:3300/onlinebookstore"
       username: "root"
-      password: "root"   # or use secrets
-    secrets:
-      mysql_password: ${{ secrets.DB_PASSWORD }}
+      password: "root"   
+    

@@ -11,12 +11,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Download liquibase
-        run: |
-          wget https://github.com/liquibase/liquibase/releases/download/v4.33.0/liquibase-4.33.0.zip
-          unzip liquibase-4.33.0.zip
-          rm liquibase-4.33.0.zip
-          echo "$GITHUB_WORKSPACE/liquibase" >> $GITHUB_PATH
+      - name: setup liquibase
+        uses: liquibase/setup-liquibase@v1
+        with:
+          version: 4.33.0
+          edition: 'oss'
           
       - name: Download MySQL JDBC Driver
         run: |
