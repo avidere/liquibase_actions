@@ -21,13 +21,14 @@ jobs:
 
       - name: Download MySQL JDBC Driver
         run: |
-          wget -O /opt/liquibase/lib/mysql-connector-j-8.0.30.jar \
+          wget -O /opt/liquibase/lib/mysql-connector-j-9.3.0.jar \
             https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/9.3.0/mysql-connector-j-9.3.0.jar
           ls -l /opt/liquibase/lib
 
       - name: Run Liquibase Update
         run: |
           liquibase \
+            --classpath=/opt/liquibase/lib/mysql-connector-j-9.3.0.jar\
             --url="jdbc:mysql://localhost:3300/onlinebookstore" \
             --username=root \
             --password=root \
