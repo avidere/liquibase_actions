@@ -23,6 +23,7 @@ jobs:
         run: |
           mkdir -p lib
           wget https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/9.3.0/mysql-connector-j-9.3.0.jar
+          mv mysql-connector-j-9.3.0.jar /opt/liquibase/lib
           ls -lrt
 
       - name: Run Liquibase Update
