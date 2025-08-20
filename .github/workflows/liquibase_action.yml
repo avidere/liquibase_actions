@@ -36,13 +36,10 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Liquibase
+      - name: Install Liquibase via brew
         run: |
-            curl -sL https://github.com/liquibase/liquibase/releases/download/v4.30.0/liquibase-4.30.0.tar.gz | tar xz
-            sudo mv liquibase /opt/liquibase
-            sudo ln -s /opt/liquibase/liquibase /usr/local/bin/liquibase
-            ls -l /opt/liquibase   # 👈 Debug: show what's inside
-            liquibase --version
+          brew install liquibase
+          liquibase --version
 
       - name: Download MySQL JDBC driver
         run: |
