@@ -1,34 +1,40 @@
 name: Liquibase MySQL Migration
 
 on:
-  push:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-  liquibase-update:
+  migrate:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: setup liquibase
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Liquibase
         uses: liquibase/setup-liquibase@v1
         with:
-          version: 4.33.0
-          edition: 'oss'
-          
+          liquibase-version: 4.33.0
+
       - name: Download MySQL JDBC Driver
         run: |
-          liquibase --version
-          mkdir -p lib
-          curl -L https://repo1.maven.org/maven2/mysql/mysql-connector-j/8.0.30/mysql-connector-j-8.0.30.jar -o lib/mysql-connector-j-8.0.30.jar
+          mkdir -p $GITHUB_WORKSPACE/lib
+          curl -L https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.0.30/mysql-connector-j-8.0.30.jar \
+            -o $GITHUB_WORKSPACE/lib/mysql-connector-j-8.0.30.jar
+          ls -lh $GITHUB_WORKSPACE/lib  # 👀 verify jar is present
 
       - name: Run Liquibase Update
         run: |
           liquibase \
-            --classpath=lib/mysql-connector-j-8.0.30.jar \
-            --url="jdbc:mysql://localhost:3300/onlinebookstore" \
+            --classpath=$GITHUB_WORKSPACE/lib/mysql-connector-j-8.0.30.jar \
+            --changeLogFile=changelog.sql \
+            --url="jdbc:mysql://127.0.0.1:3306/testdb" \
             --username=root \
             --password=root \
-            --changeLogFile=changelog/changelog.xml \
             update
