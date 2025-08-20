@@ -14,7 +14,8 @@ jobs:
       - name: Download liquibase
         run: |
           wget https://github.com/liquibase/liquibase/releases/download/v4.33.0/liquibase-4.33.0.zip
-          ls -lrt 
+          unzip liquibase-4.33.0.zip
+          rmdir liquibase-4.33.0.zip
 
       - name: Download MySQL JDBC Driver
         run: |
