@@ -17,6 +17,7 @@ jobs:
           unzip liquibase-4.33.0.zip
           rm liquibase-4.33.0.zip
           export PATH=$PATH:/opt/liquibase
+          liquibase --version
 
 
       - name: Download MySQL JDBC Driver
