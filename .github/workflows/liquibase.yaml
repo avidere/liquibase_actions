@@ -6,7 +6,7 @@ on:
 
 jobs:
   db-migration:
-    uses: ./.github/workflows/liquibase.yml
+    uses: ./.github/workflows/liquibase_action.yml
     with:
       db_host: ${{ secrets.DB_HOST }}
       db_port: ${{ secrets.DB_PORT }}
