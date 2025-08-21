@@ -1,4 +1,5 @@
-name: Liquibase MySQL Migration
+name: Liquibase CI Deployment
+description: This workflow runs Liquibase to build artifact.
 
 on:
   push:
