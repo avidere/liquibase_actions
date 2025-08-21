@@ -34,3 +34,17 @@ jobs:
             flow \
             --flow-file=liquibase-ci.flowfile.yaml \
             --logLevel=info 
+      
+      - name: output validation
+        run: |
+          liquibase \
+            --changeLogFile=changelog
+          
+
+      - name: Rollback Liquibase Changes
+        if: failure()  # Only run rollback if the previous step fails
+        run: |
+          liquibase \
+            --changeLogFile=changelog/changelog.xml \
+            rollbackCount 1 \
+            --logLevel=info
