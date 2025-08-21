@@ -33,4 +33,5 @@ jobs:
             --username="${{ secrets.DB_USER }}" \
             --password="${{ secrets.DB_PASS }}" \
             --changeLogFile=changelog/changelog.xml \
-            update
+            --flowFile=liquibase-ci.flowfile.yaml \
+            --logLevel=info 
