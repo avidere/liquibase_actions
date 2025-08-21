@@ -29,9 +29,6 @@ jobs:
       - name: Run Liquibase Update
         run: |
           liquibase \
-            --url="jdbc:mysql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}" \
-            --username="${{ secrets.DB_USER }}" \
-            --password="${{ secrets.DB_PASS }}" \
             --changeLogFile=changelog/changelog.xml \
             flow \
             --flow-file=liquibase-ci.flowfile.yaml \
