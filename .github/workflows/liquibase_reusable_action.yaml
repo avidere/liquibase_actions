@@ -24,7 +24,7 @@ jobs:
         run: |
           wget -O /opt/liquibase/lib/mysql-connector-j-9.3.0.jar \
             https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/9.3.0/mysql-connector-j-9.3.0.jar
-          ls -l /opt/liquibase/lib
+          ls -lrt
 
       - name: Run Liquibase Update
         run: |
@@ -33,5 +33,6 @@ jobs:
             --username="${{ secrets.DB_USER }}" \
             --password="${{ secrets.DB_PASS }}" \
             --changeLogFile=changelog/changelog.xml \
-            --flowFile=liquibase-ci.flowfile.yaml \
+            flow \
+            --flow-file=liquibase-ci.flowfile.yaml \
             --logLevel=info 
