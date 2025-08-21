@@ -24,7 +24,8 @@ jobs:
         run: |
           wget -O /opt/liquibase/lib/mysql-connector-j-9.3.0.jar \
             https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/9.3.0/mysql-connector-j-9.3.0.jar
-          ls -lrt
+          wget -O /opt/liquibase/lib/liquibase-hashicorp-vault-2.0.5.jar \
+            https://repo1.maven.org/maven2/org/liquibase/ext/vaults/liquibase-hashicorp-vault/2.0.5/liquibase-hashicorp-vault-2.0.5.jar
 
       - name: Run Liquibase Update
         run: |
