@@ -19,14 +19,14 @@ on:
 
 jobs:
   liquibase-Execution:
-    if : ${{ github.event_name == 'liquibase-ci.flowfile.yaml' }}
+    if : ${{ github.cd_flowfile== 'liquibase-ci.flowfile.yaml' }}
     uses: ./.github/workflows/liquibase_reusable_ci_action.yaml
     with:
       changeLogFile: ${{ inputs.changeLogFile }}
       flowfile: ${{ inputs.ci_flowfile }}
   
   liquibase-Deployment:
-    if : ${{ github.event_name == 'liquibase-cd.flowfile.yaml' }}
+    if : ${{ github.ci_flowfile == 'liquibase-cd.flowfile.yaml' }}
     needs: liquibase-Execution    
     uses: ./.github/workflows/liquibase_reusable_cd_action.yaml
     with:
