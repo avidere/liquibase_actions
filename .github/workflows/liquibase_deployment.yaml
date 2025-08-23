@@ -9,12 +9,12 @@ on:
 
       cd_flowfile:
         description: 'Path to the CD flowfile'
-        required: true
+        required: false
         default: 'liquibase-cd.flowfile.yaml'
 
       ci_flowfile:
         description: 'Path to the CI flowfile'
-        required: true
+        required: false
         default: 'liquibase-ci.flowfile.yaml'
 
 jobs:
