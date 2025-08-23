@@ -9,6 +9,6 @@ on:
 
 jobs:
   liquibase-Execution:
-    uses: ./.github/workflows/liquibase_reusable_action.yaml@main
+    uses: ./.github/workflows/liquibase_reusable_action.yaml
     with:
       changeLogFile: ${{ github.event.inputs.changeLogFile }}
