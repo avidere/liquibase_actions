@@ -2,8 +2,7 @@ name: Liquibase CI Deployment
 description: This workflow runs Liquibase to build artifact.
 
 on:
-  push:
-    branches: [ main ]
+  workflow_call:
 
 jobs:
   liquibase-Execution:
@@ -30,21 +29,15 @@ jobs:
       - name: Run Liquibase Update
         run: |
           liquibase \
-            --changeLogFile=changelog/changelog.xml \
+            --changeLogFile=${{ github.event.inputs.changeLogFile }} \
             flow \
             --flow-file=liquibase-ci.flowfile.yaml \
             --logLevel=info 
       
-      - name: output validation
-        run: |
-          liquibase \
-            --changeLogFile=changelog
-          
-
       - name: Rollback Liquibase Changes
         if: failure()  # Only run rollback if the previous step fails
         run: |
           liquibase \
-            --changeLogFile=changelog/changelog.xml \
+            --changeLogFile=${{ github.event.inputs.changeLogFile }} \
             rollbackCount 1 \
             --logLevel=info
