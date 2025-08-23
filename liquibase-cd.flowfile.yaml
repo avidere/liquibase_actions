@@ -13,9 +13,7 @@ stages:
         cmdArgs: {changeLogFile: changelog/changelog.xml}
         properties: liquibase.properties
 
-endstage:
+endStage:
     actions:
       - type: liquibase
         command: History
-        cmdArgs: {verbose: true, changeLogFile: changelog/changelog.xml}
-        properties: liquibase.properties
