@@ -1,12 +1,7 @@
 name: liquibase CI Deployment
 on:
   workflow_dispatch:
-    inputs:
-        changeLogFile:
-          description: 'Path to the changelog file'
-          required: true
-          default: 'changelog/changelog.xml'
-
+    
 jobs:
   liquibase-Execution:
     uses: ./.github/workflows/liquibase_reusable_action.yaml
