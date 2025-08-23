@@ -3,6 +3,12 @@ description: This workflow runs Liquibase to build artifact.
 
 on:
   workflow_call:
+    inputs:
+      changeLogFile:
+        description: 'Path to the changelog file'
+        required: true
+        type: string
+        default: 'changelog/changelog.xml'
 
 jobs:
   liquibase-Execution:
