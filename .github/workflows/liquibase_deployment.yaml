@@ -1,4 +1,5 @@
-name: liquibase CI Deployment
+name: liquibase CI/CD Deployment
+
 on:
   workflow_dispatch:
     inputs:
@@ -7,28 +8,19 @@ on:
         required: true
         default: 'changelog/changelog.xml'
 
-      cd_flowfile:
-        description: 'Path to the CD flowfile'
-        required: false
-        default: 'liquibase-cd.flowfile.yaml'
-
-      ci_flowfile:
-        description: 'Path to the CI flowfile'
-        required: false
-        default: 'liquibase-ci.flowfile.yaml'
+      mode:
+        description: 'Choose mode: CI or CD'
+        required: true
+        default: 'CI'
+        type: choice
+        options:
+          - CI
+          - CD
 
 jobs:
-  liquibase-Execution:
-    if : ${{ github.cd_flowfile== 'liquibase-ci.flowfile.yaml' }}
+  liquibase:
     uses: ./.github/workflows/liquibase_reusable_ci_action.yaml
     with:
       changeLogFile: ${{ inputs.changeLogFile }}
-      flowfile: ${{ inputs.ci_flowfile }}
-  
-  liquibase-Deployment:
-    if : ${{ github.ci_flowfile == 'liquibase-cd.flowfile.yaml' }}
-    needs: liquibase-Execution    
-    uses: ./.github/workflows/liquibase_reusable_cd_action.yaml
-    with:
-      changeLogFile: ${{ inputs.changeLogFile }}  
-      flowfile: ${{ inputs.cd_flowfile }}
+      ci_flowfile: ${{ inputs.mode == 'CI' && 'liquibase-ci.flowfile.yaml' || '' }}
+      cd_flowfile: ${{ inputs.mode == 'CD' && 'liquibase-cd.flowfile.yaml' || '' }}

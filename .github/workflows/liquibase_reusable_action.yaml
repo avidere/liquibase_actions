@@ -1,4 +1,4 @@
-name: Liquibase Resuable Action
+name: Liquibase Reusable Action
 description: This workflow runs Liquibase to build artifact.
 
 on:
@@ -11,12 +11,12 @@ on:
 
       cd_flowfile:
         description: 'Path to the CD flowfile'
-        required: true
+        required: false
         type: string
 
       ci_flowfile:
         description: 'Path to the CI flowfile'
-        required: true
+        required: false
         type: string
   
 
@@ -35,23 +35,36 @@ jobs:
           echo "/opt/liquibase" >> $GITHUB_PATH
           ls -l /opt/liquibase  # Debug
 
-      - name: Download MySQL JDBC Driver
+      - name: Download JDBC + Vault Extensions
         run: |
           wget -O /opt/liquibase/lib/mysql-connector-j-9.3.0.jar \
             https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/9.3.0/mysql-connector-j-9.3.0.jar
           wget -O /opt/liquibase/lib/liquibase-hashicorp-vault-2.0.5.jar \
             https://repo1.maven.org/maven2/org/liquibase/ext/vaults/liquibase-hashicorp-vault/2.0.5/liquibase-hashicorp-vault-2.0.5.jar
 
-      - name: Run Liquibase Update
+      # Run CI flow if provided
+      - name: Run Liquibase CI Flow
+        if: ${{ inputs.ci_flowfile != '' }}
         run: |
           liquibase \
-            --changeLogFile=${{ github.event.inputs.changeLogFile }} \
+            --changeLogFile=${{ inputs.changeLogFile }} \
             flow \
-            --flow-file=liquibase-ci.flowfile.yaml \
-            --logLevel=info 
-      
-      - name: Rollback Liquibase Changes
-        if: failure()  # Only run rollback if the previous step fails
+            --flow-file=${{ inputs.ci_flowfile }} \
+            --logLevel=info
+
+      # Run CD flow if provided
+      - name: Run Liquibase CD Flow
+        if: ${{ inputs.cd_flowfile != '' }}
+        run: |
+          liquibase \
+            --changeLogFile=${{ inputs.changeLogFile }} \
+            flow \
+            --flow-file=${{ inputs.cd_flowfile }} \
+            --logLevel=info
+
+      # Rollback for CD only
+      - name: Rollback Liquibase CD
+        if: failure() && inputs.cd_flowfile != ''
         run: |
           liquibase \
             --changeLogFile=${{ inputs.changeLogFile }} \
