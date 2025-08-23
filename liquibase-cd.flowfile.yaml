@@ -12,9 +12,8 @@ stages:
         command: Update
         cmdArgs: {changeLogFile: changelog/changelog.xml}
         properties: liquibase.properties
-        
+
 endstage:
-  history:
     actions:
       - type: liquibase
         command: History
