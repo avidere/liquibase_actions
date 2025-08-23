@@ -1,0 +1,22 @@
+stages:
+  update-sql:
+    actions:
+      - type: liquibase
+        command: UpdateSQL
+        cmdArgs: {changeLogFile: changelog/changelog.xml}
+        properties: liquibase.properties
+  
+  update:
+    actions:
+      - type: liquibase
+        command: Update
+        cmdArgs: {changeLogFile: changelog/changelog.xml}
+        properties: liquibase.properties
+        
+endstage:
+  history:
+    actions:
+      - type: liquibase
+        command: History
+        cmdArgs: {verbose: true, changeLogFile: changelog/changelog.xml}
+        properties: liquibase.properties

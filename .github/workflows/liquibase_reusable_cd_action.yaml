@@ -1,4 +1,4 @@
-name: Liquibase CI Deployment
+name: Liquibase Resuable Action
 description: This workflow runs Liquibase to build artifact.
 
 on:
@@ -8,7 +8,17 @@ on:
         description: 'Path to the changelog file'
         required: true
         type: string
-        default: 'changelog/changelog.xml'
+
+      cd_flowfile:
+        description: 'Path to the CD flowfile'
+        required: true
+        type: string
+
+      ci_flowfile:
+        description: 'Path to the CI flowfile'
+        required: true
+        type: string
+  
 
 jobs:
   liquibase-Execution:
@@ -44,6 +54,6 @@ jobs:
         if: failure()  # Only run rollback if the previous step fails
         run: |
           liquibase \
-            --changeLogFile=${{ github.event.inputs.changeLogFile }} \
+            --changeLogFile=${{ inputs.changeLogFile }} \
             rollbackCount 1 \
             --logLevel=info
