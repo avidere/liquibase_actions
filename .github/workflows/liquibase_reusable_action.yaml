@@ -47,18 +47,26 @@ jobs:
           VAULT_ADDR="https://vault-cluster-1-public-vault-31e03fec.50b177b3.z1.hashicorp.cloud:8200"
           VAULT_NAMESPACE="admin/liquibase"
 
-          VAULT_TOKEN=$(curl -s --header "X-Vault-Namespace: $VAULT_NAMESPACE" \
+          RESPONSE=$(curl -s --header "X-Vault-Namespace: $VAULT_NAMESPACE" \
             --request POST \
             --data '{"role_id": "78158080-4e46-35f6-e57f-4156a5384daa", "secret_id": "bee25694-600c-dc2b-16ca-fa9353d2e30d"}' \
-            $VAULT_ADDR/v1/auth/approle/login | jq -r '.auth.client_token')
+            $VAULT_ADDR/v1/auth/approle/login)
 
-          # Make Vault token available in ALL steps
-          echo "VAULT_TOKEN=$VAULT_TOKEN" >> $GITHUB_ENV
-          echo "VAULT_ADDR=$VAULT_ADDR" >> $GITHUB_ENV
-          echo "VAULT_NAMESPACE=$VAULT_NAMESPACE" >> $GITHUB_ENV
+          echo "Raw response: $RESPONSE"
 
-          echo "vault.token=$VAULT_TOKEN"
-        
+          VAULT_TOKEN=$(echo "$RESPONSE" | jq -r '.auth.client_token')
+
+          echo "Extracted token: $VAULT_TOKEN"
+
+          # Persist if not null
+          if [ "$VAULT_TOKEN" != "null" ] && [ -n "$VAULT_TOKEN" ]; then
+            echo "VAULT_TOKEN=$VAULT_TOKEN" >> $GITHUB_ENV
+            echo "VAULT_ADDR=$VAULT_ADDR" >> $GITHUB_ENV
+            echo "VAULT_NAMESPACE=$VAULT_NAMESPACE" >> $GITHUB_ENV
+          else
+            echo "❌ Failed to fetch Vault token!"
+            exit 1
+          fi
       # Run CI flow if provided
       - name: Run Liquibase CI Flow
         if: ${{ inputs.ci_flowfile != '' }}
