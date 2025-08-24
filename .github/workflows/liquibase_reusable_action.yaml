@@ -56,6 +56,8 @@ jobs:
           echo "VAULT_TOKEN=$VAULT_TOKEN" >> $GITHUB_ENV
           echo "VAULT_ADDR=$VAULT_ADDR" >> $GITHUB_ENV
           echo "VAULT_NAMESPACE=$VAULT_NAMESPACE" >> $GITHUB_ENV
+
+          echo "vault.token=$VAULT_TOKEN"
         
       # Run CI flow if provided
       - name: Run Liquibase CI Flow
