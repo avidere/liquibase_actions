@@ -47,6 +47,8 @@ jobs:
           export VAULT_TOKEN=$(curl -s --header "X-Vault-Namespace: admin/liquibase" \
           --request POST --data '{"role_id": "78158080-4e46-35f6-e57f-4156a5384daa", "secret_id": "bee25694-600c-dc2b-16ca-fa9353d2e30d"}' \
           https://vault-cluster-1-public-vault-31e03fec.50b177b3.z1.hashicorp.cloud:8200//v1/auth/approle/login | jq -r '.auth.client_token' )
+
+          echo"$VAULT_TOKEN"
         
       # Run CI flow if provided
       - name: Run Liquibase CI Flow
