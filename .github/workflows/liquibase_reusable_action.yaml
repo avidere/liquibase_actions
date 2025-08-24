@@ -58,9 +58,9 @@ jobs:
 
           if [ "$VAULT_TOKEN" != "null" ] && [ -n "$VAULT_TOKEN" ]; then
             # Important: use sudo tee so root can write into $GITHUB_ENV
-            echo "VAULT_TOKEN=$VAULT_TOKEN" | sudo tee -a $GITHUB_ENV
-            echo "VAULT_ADDR=$VAULT_ADDR" | sudo tee -a $GITHUB_ENV
-            echo "VAULT_NAMESPACE=$VAULT_NAMESPACE" | sudo tee -a $GITHUB_ENV
+            echo "vault.token=$VAULT_TOKEN" | sudo tee -a $GITHUB_ENV
+            echo "vault.addr=$VAULT_ADDR" | sudo tee -a $GITHUB_ENV
+            echo "vault.namespace=$VAULT_NAMESPACE" | sudo tee -a $GITHUB_ENV
           else
             echo "❌ Failed to fetch Vault token!"
             exit 1
