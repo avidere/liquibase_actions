@@ -47,22 +47,20 @@ jobs:
           VAULT_ADDR="https://vault-cluster-1-public-vault-31e03fec.50b177b3.z1.hashicorp.cloud:8200"
           VAULT_NAMESPACE="admin/liquibase"
 
-          RESPONSE=$(curl -s --header "X-Vault-Namespace: $VAULT_NAMESPACE" \
+          RESPONSE=$(sudo curl -s --header "X-Vault-Namespace: $VAULT_NAMESPACE" \
             --request POST \
-            --data '{"role_id": "78158080-4e46-35f6-e57f-4156a5384daa", "secret_id": "bee25694-600c-dc2b-16ca-fa9353d2e30d"}' \
+            --data '{"role_id": "78158080-e57f-4156a5384daa", "secret_id": "bee25694--16ca-fa9353d2e30d"}' \
             $VAULT_ADDR/v1/auth/approle/login)
 
           echo "Raw response: $RESPONSE"
 
           VAULT_TOKEN=$(echo "$RESPONSE" | jq -r '.auth.client_token')
 
-          echo "Extracted token: $VAULT_TOKEN"
-
-          # Persist if not null
           if [ "$VAULT_TOKEN" != "null" ] && [ -n "$VAULT_TOKEN" ]; then
-            echo "VAULT_TOKEN=$VAULT_TOKEN" >> $GITHUB_ENV
-            echo "VAULT_ADDR=$VAULT_ADDR" >> $GITHUB_ENV
-            echo "VAULT_NAMESPACE=$VAULT_NAMESPACE" >> $GITHUB_ENV
+            # Important: use sudo tee so root can write into $GITHUB_ENV
+            echo "VAULT_TOKEN=$VAULT_TOKEN" | sudo tee -a $GITHUB_ENV
+            echo "VAULT_ADDR=$VAULT_ADDR" | sudo tee -a $GITHUB_ENV
+            echo "VAULT_NAMESPACE=$VAULT_NAMESPACE" | sudo tee -a $GITHUB_ENV
           else
             echo "❌ Failed to fetch Vault token!"
             exit 1
