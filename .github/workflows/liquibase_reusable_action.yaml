@@ -49,7 +49,7 @@ jobs:
 
           RESPONSE=$(sudo curl -s --header "X-Vault-Namespace: $VAULT_NAMESPACE" \
             --request POST \
-            --data '{"role_id": "df4a1f0d-b3c7-6013-4185-350150e44290", "secret_id": "372b9737-683c-9898-c267-40c77c3367c6"}' \
+            --data '{"role_id": "df4a1f0d-b3c7-6013-4185-350150e44290", "secret_id": "bd624b89-0547-8d43-d907-7be6e97db12c"}' \
             $VAULT_ADDR/v1/auth/approle/login)
 
           echo "Raw response: $RESPONSE"
