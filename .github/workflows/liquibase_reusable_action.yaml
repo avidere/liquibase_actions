@@ -23,6 +23,8 @@ on:
 jobs:
   liquibase-Execution:
     runs-on: ubuntu-latest
+    env:
+      VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
