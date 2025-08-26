@@ -52,6 +52,8 @@ jobs:
             flow \
             --flow-file=${{ inputs.ci_flowfile }} \
             --logLevel=info
+            --liquibase-log=liquibase.log
+            --outputFile=liquibase_output.txt
 
       # Run CD flow if provided
       - name: Run Liquibase CD Flow
