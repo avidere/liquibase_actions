@@ -42,6 +42,23 @@ jobs:
           wget -O /opt/liquibase/lib/liquibase-hashicorp-vault-2.0.5.jar \
             https://repo1.maven.org/maven2/org/liquibase/ext/vaults/liquibase-hashicorp-vault/2.0.5/liquibase-hashicorp-vault-2.0.5.jar
 
+      - name: generate vault Token
+        run: |
+          VAULT_TOKEN=curl -k \
+            -H "X-Vault-Namespace: ${namespace}" \
+            --request POST \
+            --data '{
+                "role_id": "bb5323d8-51a1-3cae-a732-f1325e3ad66d",
+                "secret_id": "01d0613a-53f0-cfdc-f621-102f321f7061"
+            }' \
+            ${env.VAULT_ADDR}/v1/auth/approle/login | jq -r .auth > token.json
+
+          def authProps = readJSON file: 'token.json'
+          def token = authProps['client_token']
+          return token
+
+          echo "$VAULT_TOKEN"
+
       # Run CI flow if provided
       - name: Run Liquibase CI Flow
         if: ${{ inputs.ci_flowfile != '' }}
