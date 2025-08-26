@@ -51,9 +51,7 @@ jobs:
             --changeLogFile=${{ inputs.changeLogFile }} \
             flow \
             --flow-file=${{ inputs.ci_flowfile }} \
-            --logLevel=info
-            --outputFile=liquibase_output.txt
-            --logFile=liquibase.log
+
 
       # Run CD flow if provided
       - name: Run Liquibase CD Flow
@@ -63,7 +61,7 @@ jobs:
             --changeLogFile=${{ inputs.changeLogFile }} \
             flow \
             --flow-file=${{ inputs.cd_flowfile }} \
-            --logLevel=info
+
 
       # Rollback for CD only
       - name: Rollback Liquibase CD
@@ -72,4 +70,4 @@ jobs:
           liquibase \
             --changeLogFile=${{ inputs.changeLogFile }} \
             rollbackCount 1 \
-            --logLevel=info
+
