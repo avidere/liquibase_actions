@@ -49,6 +49,7 @@ jobs:
       - name: Run Liquibase CI Flow
         if: ${{ inputs.ci_flowfile != '' }}
         run: |
+          echo "$VAULT_TOKEN"
           liquibase \
             --changeLogFile=${{ inputs.changeLogFile }} \
             flow \
