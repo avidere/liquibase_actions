@@ -9,7 +9,7 @@
         <tagDatabase  tag="${REQUEST_NUMBER}-${BUILD_NUMBER}"/>
     </changeSet>
     <changeSet id="liquibase-2" author="avinash">
-        <sqlFile path="/dbscripts/users.sql"/>
+        <sqlFile path="dbscripts/users.sql"/>
     <rollback>
         <sqlFile path="rollback/users_rollback.sql"/>
     </rollback>
