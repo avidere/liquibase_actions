@@ -4,18 +4,25 @@ on:
   workflow_dispatch:
     inputs:
       changeLogFile:
-        description: 'Path to the changelog file'
         required: true
         default: 'changelog/changelog.xml'
 
       mode:
-        description: 'Choose mode: CI or CD'
         required: true
         default: 'CI'
         type: choice
         options:
           - CI
           - CD
+
+      environment:
+        description: 'Select Environment'
+        required: true
+        type: choice
+        options:
+          - DEV
+          - UAT
+          - PROD
 
 jobs:
   liquibase:
@@ -24,3 +31,4 @@ jobs:
       changeLogFile: ${{ inputs.changeLogFile }}
       ci_flowfile: ${{ inputs.mode == 'CI' && 'liquibase-ci.flowfile.yaml' || '' }}
       cd_flowfile: ${{ inputs.mode == 'CD' && 'liquibase-cd.flowfile.yaml' || '' }}
+    secrets: inherit   # 🔥 IMPORTANT
