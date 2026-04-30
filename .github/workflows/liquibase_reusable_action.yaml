@@ -1,28 +1,22 @@
 name: Liquibase Reusable Action
-description: This workflow runs Liquibase to build artifact.
 
 on:
   workflow_call:
     inputs:
       changeLogFile:
-        description: 'Path to the changelog file'
         required: true
         type: string
-
       cd_flowfile:
-        description: 'Path to the CD flowfile'
         required: false
         type: string
-
       ci_flowfile:
-        description: 'Path to the CI flowfile'
         required: false
         type: string
-  
 
 jobs:
   liquibase-Execution:
     runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
 
     steps:
       - name: Checkout repository
@@ -31,40 +25,43 @@ jobs:
       - name: Setup Liquibase
         run: |
           wget https://github.com/liquibase/liquibase/releases/download/v4.33.0/liquibase-4.33.0.zip
-          mkdir -p /opt/liquibase
-          unzip liquibase-4.33.0.zip -d /opt/liquibase
-          echo "/opt/liquibase" >> $GITHUB_PATH
-          ls -l /opt/liquibase
+          unzip liquibase-4.33.0.zip -d liquibase
+          echo "$PWD/liquibase" >> $GITHUB_PATH
 
-      - name: Download JDBC + Vault Extensions
+      # 🔥 Restore truststore
+      - name: Setup Truststore
         run: |
-          wget -O /opt/liquibase/lib/mysql-connector-j-9.3.0.jar \
-            https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/9.3.0/mysql-connector-j-9.3.0.jar
-          wget -O /opt/liquibase/lib/liquibase-hashicorp-vault-2.0.5.jar \
-            https://repo1.maven.org/maven2/org/liquibase/ext/vaults/liquibase-hashicorp-vault/2.0.5/liquibase-hashicorp-vault-2.0.5.jar
+          echo "${{ secrets.SNOWFLAKE_TRUSTSTORE_BASE64 }}" | base64 -d > truststore.jks
 
-      # Run CI flow if provided
+      # 🔥 Set SSL
+      - name: Set JAVA_OPTS
+        run: |
+          echo "JAVA_OPTS=-Djavax.net.ssl.trustStore=$PWD/truststore.jks -Djavax.net.ssl.trustStorePassword=${{ secrets.SNOWFLAKE_TRUSTSTORE_PASSWORD }}" >> $GITHUB_ENV
+
+      # 🔥 Create liquibase.properties
+      - name: Create liquibase.properties
+        run: |
+          cat <<EOF > liquibase.properties
+          url=${{ secrets.SNOWFLAKE_URL }}
+          username=${{ secrets.SNOWFLAKE_USERNAME }}
+          password=${{ secrets.SNOWFLAKE_PASSWORD }}
+          driver=net.snowflake.client.jdbc.SnowflakeDriver
+          EOF
+
+      # CI Flow
       - name: Run Liquibase CI Flow
         if: ${{ inputs.ci_flowfile != '' }}
         run: |
-          liquibase \
-            --changeLogFile=${{ inputs.changeLogFile }} \
-            flow \
-            --flow-file=${{ inputs.ci_flowfile }}
+          liquibase --changeLogFile=${{ inputs.changeLogFile }} flow --flow-file=${{ inputs.ci_flowfile }}
 
-      # Run CD flow if provided
+      # CD Flow
       - name: Run Liquibase CD Flow
         if: ${{ inputs.cd_flowfile != '' }}
         run: |
-          liquibase \
-            --changeLogFile=${{ inputs.changeLogFile }} \
-            flow \
-            --flow-file=${{ inputs.cd_flowfile }}
+          liquibase --changeLogFile=${{ inputs.changeLogFile }} flow --flow-file=${{ inputs.cd_flowfile }}
 
-      # Rollback for CD only
+      # Rollback
       - name: Rollback Liquibase CD
         if: failure() && inputs.cd_flowfile != ''
         run: |
-          liquibase \
-            --changeLogFile=${{ inputs.changeLogFile }} \
-            rollbackCount 1
+          liquibase --changeLogFile=${{ inputs.changeLogFile }} rollbackCount 1
