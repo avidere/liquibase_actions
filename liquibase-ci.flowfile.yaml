@@ -12,11 +12,4 @@ stages:
         command: Validate
         cmdArgs: {changeLogFile: changelog/changelog.xml}
         properties: liquibase.properties
-  
-  Update:
-    actions:
-      - type: liquibase
-        command: Update
-        cmdArgs: {changeLogFile: changelog/changelog.xml}
-        properties: liquibase.properties
         
