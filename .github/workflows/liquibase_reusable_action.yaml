@@ -46,6 +46,7 @@ jobs:
           username=${{ secrets.SNOWFLAKE_USERNAME }}
           password=${{ secrets.SNOWFLAKE_PASSWORD }}
           driver=net.snowflake.client.jdbc.SnowflakeDriver
+          liquibaselicensekey=${{ secrets.LIQUIBASE_LICENSE_KEY }}
           EOF
 
       # CI Flow
