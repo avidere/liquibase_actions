@@ -23,8 +23,7 @@ on:
 jobs:
   liquibase-Execution:
     runs-on: ubuntu-latest
-    env:
-      VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -35,7 +34,7 @@ jobs:
           mkdir -p /opt/liquibase
           unzip liquibase-4.33.0.zip -d /opt/liquibase
           echo "/opt/liquibase" >> $GITHUB_PATH
-          ls -l /opt/liquibase  # Debug
+          ls -l /opt/liquibase
 
       - name: Download JDBC + Vault Extensions
         run: |
@@ -44,17 +43,14 @@ jobs:
           wget -O /opt/liquibase/lib/liquibase-hashicorp-vault-2.0.5.jar \
             https://repo1.maven.org/maven2/org/liquibase/ext/vaults/liquibase-hashicorp-vault/2.0.5/liquibase-hashicorp-vault-2.0.5.jar
 
-
       # Run CI flow if provided
       - name: Run Liquibase CI Flow
         if: ${{ inputs.ci_flowfile != '' }}
         run: |
-          echo "$VAULT_TOKEN"
           liquibase \
             --changeLogFile=${{ inputs.changeLogFile }} \
             flow \
-            --flow-file=${{ inputs.ci_flowfile }} \
-
+            --flow-file=${{ inputs.ci_flowfile }}
 
       # Run CD flow if provided
       - name: Run Liquibase CD Flow
@@ -63,8 +59,7 @@ jobs:
           liquibase \
             --changeLogFile=${{ inputs.changeLogFile }} \
             flow \
-            --flow-file=${{ inputs.cd_flowfile }} \
-
+            --flow-file=${{ inputs.cd_flowfile }}
 
       # Rollback for CD only
       - name: Rollback Liquibase CD
@@ -72,5 +67,4 @@ jobs:
         run: |
           liquibase \
             --changeLogFile=${{ inputs.changeLogFile }} \
-            rollbackCount 1 \
-
+            rollbackCount 1
