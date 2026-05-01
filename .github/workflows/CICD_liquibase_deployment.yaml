@@ -1,0 +1,20 @@
+name: Liquibase Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [dev, qa, prod]
+
+      changeLogFile:
+        default: changelog/changelog.xml
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/liquibase_cicd_reusable.yaml
+    with:
+      environment: ${{ inputs.environment }}
+      changeLogFile: ${{ inputs.changeLogFile }}
+      ci_flowfile: liquibase-ci.flowfile.yaml
+      cd_flowfile: liquibase-cd.flowfile.yaml
