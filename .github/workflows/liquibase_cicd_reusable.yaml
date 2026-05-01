@@ -1,92 +1,20 @@
-name: Liquibase CICD Reusable
+name: Liquibase Deploy
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
       environment:
-        required: true
-        type: string
+        type: choice
+        options: [dev, qa, prod]
+
       changeLogFile:
-        required: true
-        type: string
-      ci_flowfile:
-        required: false
-        type: string
-      cd_flowfile:
-        required: false
-        type: string
+        default: changelog/changelog.xml
 
 jobs:
-  liquibase:
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Liquibase
-        run: |
-          wget https://github.com/liquibase/liquibase/releases/download/v4.33.0/liquibase-4.33.0.zip
-          unzip liquibase-4.33.0.zip -d /opt/liquibase
-          echo "/opt/liquibase" >> $GITHUB_PATH
-
-      # Decode truststore
-      - name: Setup Truststore
-        run: |
-          echo "${{ secrets.TRUSTSTORE_BASE64 }}" | base64 -d > truststore.jks
-
-      # Export env
-      - name: Set Env
-        run: |
-          echo "JAVA_OPTS=-Djavax.net.ssl.trustStore=truststore.jks -Djavax.net.ssl.trustStorePassword=${{ secrets.TRUSTSTORE_PASSWORD }}" >> $GITHUB_ENV
-
-      # 🔹 POLICY CHECK (WITH CONTINUE)
-      - name: Policy Check
-        id: policy
-        continue-on-error: true
-        run: |
-          liquibase validate --changeLogFile=${{ inputs.changeLogFile }}
-
-      # 🔹 Upload policy output
-      - name: Upload Policy Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: policy-report
-          path: liquibase.log
-
-      # 🔹 STOP IF POLICY FAILED (WAIT FOR APPROVAL)
-      - name: Require Approval on Policy Failure
-        if: steps.policy.outcome == 'failure'
-        uses: trstringer/manual-approval@v1
-        with:
-          approvers: avidere
-
-      # 🔹 CI FLOW
-      - name: Run CI Flow
-        if: inputs.ci_flowfile != ''
-        run: |
-          liquibase flow --flow-file=${{ inputs.ci_flowfile }}
-
-      # 🔹 UPDATE SQL (REVIEW STAGE)
-      - name: Generate Update SQL
-        run: |
-          liquibase updateSQL --changeLogFile=${{ inputs.changeLogFile }} > updatesql.txt
-
-      - name: Upload SQL Review
-        uses: actions/upload-artifact@v4
-        with:
-          name: update-sql-review
-          path: updatesql.txt
-
-      # 🔹 APPROVAL BEFORE DEPLOY
-      - name: Approval Before Deploy
-        uses: trstringer/manual-approval@v1
-        with:
-          approvers: avidere
-
-      # 🔹 CD FLOW (ACTUAL EXECUTION)
-      - name: Run CD Flow
-        if: inputs.cd_flowfile != ''
-        run: |
-          liquibase flow --flow-file=${{ inputs.cd_flowfile }}
+  deploy:
+    uses: ./.github/workflows/liquibase_cicd_reusable.yaml
+    with:
+      environment: ${{ inputs.environment }}
+      changeLogFile: ${{ inputs.changeLogFile }}
+      ci_flowfile: liquibase-ci.flowfile.yaml
+      cd_flowfile: liquibase-cd.flowfile.yaml
