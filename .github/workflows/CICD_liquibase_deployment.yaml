@@ -5,7 +5,7 @@ on:
     inputs:
       environment:
         type: choice
-        options: [dev, qa, prod]
+        options: [DEV, QA, PROD]
 
       changeLogFile:
         default: changelog/changelog.xml
