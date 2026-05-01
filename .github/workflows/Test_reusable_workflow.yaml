@@ -1,0 +1,157 @@
+name: Liquibase Reusable Action
+
+on:
+  workflow_call:
+    inputs:
+      changeLogFile:
+        required: true
+        type: string
+      cd_flowfile:
+        required: false
+        type: string
+      ci_flowfile:
+        required: false
+        type: string
+
+jobs:
+  liquibase-Execution:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      # 1️⃣ Checkout
+      - uses: actions/checkout@v3
+
+      # 2️⃣ Setup Liquibase
+      - name: Setup Liquibase
+        run: |
+          wget https://github.com/liquibase/liquibase/releases/download/v4.33.0/liquibase-4.33.0.zip
+          unzip liquibase-4.33.0.zip -d liquibase
+          echo "$PWD/liquibase" >> $GITHUB_PATH
+
+      # 3️⃣ Truststore
+      - name: Setup Truststore
+        run: |
+          echo "${{ secrets.SNOWFLAKE_TRUSTSTORE_BASE64 }}" | base64 -d > truststore.jks
+
+      - name: Set JAVA_OPTS
+        run: |
+          echo "JAVA_OPTS=-Djavax.net.ssl.trustStore=$PWD/truststore.jks -Djavax.net.ssl.trustStorePassword=${{ secrets.SNOWFLAKE_TRUSTSTORE_PASSWORD }}" >> $GITHUB_ENV
+
+      # 4️⃣ Properties
+      - name: Create liquibase.properties
+        run: |
+          cat <<EOF > liquibase.properties
+          url=${{ secrets.SNOWFLAKE_URL }}
+          username=${{ secrets.SNOWFLAKE_USERNAME }}
+          password=${{ secrets.SNOWFLAKE_PASSWORD }}
+          driver=net.snowflake.client.jdbc.SnowflakeDriver
+          liquibaselicensekey=${{ secrets.LIQUIBASE_LICENSE_KEY }}
+          EOF
+
+      ############################################################
+      # 🔴 5️⃣ POLICY CHECK (CORRECT COMMAND)
+      ############################################################
+      - name: Run Policy Checks
+        id: policy
+        continue-on-error: true
+        run: |
+          liquibase --defaultsFile=liquibase.properties \
+            checks run > policy-checks.txt 2>&1
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
+
+      - name: Upload Policy Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: policy-check-report
+          path: policy-checks.txt
+
+      - name: Show Policy Download Info
+        run: |
+          echo "=============================="
+          echo "Download policy report from:"
+          echo "👉 Actions → This Run → Artifacts → policy-check-report"
+          echo "=============================="
+
+      # 🔥 Approval if policy fails (exit code 3)
+      - name: Manual Approval - Policy
+        if: steps.policy.outputs.exit_code == '3'
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: ${{ github.actor }}
+          minimum-approvals: 1
+          issue-title: "Policy Checks Failed"
+          issue-body: "Download 'policy-check-report' and review before approval."
+
+      ############################################################
+      # 🟢 6️⃣ CI FLOW
+      ############################################################
+      - name: Run CI Flow
+        if: ${{ inputs.ci_flowfile != '' }}
+        run: |
+          liquibase \
+            --defaultsFile=liquibase.properties \
+            --changeLogFile=${{ inputs.changeLogFile }} \
+            flow \
+            --flow-file=${{ inputs.ci_flowfile }}
+
+      ############################################################
+      # 🔵 7️⃣ SQL REVIEW STAGE
+      ############################################################
+      - name: Generate Update SQL
+        if: ${{ inputs.cd_flowfile != '' }}
+        run: |
+          liquibase \
+            --defaultsFile=liquibase.properties \
+            --changeLogFile=${{ inputs.changeLogFile }} \
+            updateSQL > updatesql.txt
+
+      - name: Upload SQL Artifact
+        if: ${{ inputs.cd_flowfile != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: updatesql-review
+          path: updatesql.txt
+
+      - name: Show SQL Download Info
+        if: ${{ inputs.cd_flowfile != '' }}
+        run: |
+          echo "=============================="
+          echo "Download SQL from:"
+          echo "👉 Actions → This Run → Artifacts → updatesql-review"
+          echo "=============================="
+
+      # 🔥 Approval before deployment
+      - name: Manual Approval - SQL Review
+        if: ${{ inputs.cd_flowfile != '' }}
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: ${{ github.actor }}
+          minimum-approvals: 1
+          issue-title: "SQL Review Required"
+          issue-body: "Download 'updatesql-review' and approve to continue."
+
+      ############################################################
+      # 🔵 8️⃣ CD FLOW
+      ############################################################
+      - name: Run CD Flow
+        if: ${{ inputs.cd_flowfile != '' }}
+        run: |
+          liquibase \
+            --defaultsFile=liquibase.properties \
+            --changeLogFile=${{ inputs.changeLogFile }} \
+            flow \
+            --flow-file=${{ inputs.cd_flowfile }}
+
+      ############################################################
+      # 🔁 9️⃣ ROLLBACK
+      ############################################################
+      - name: Rollback Liquibase CD
+        if: failure() && inputs.cd_flowfile != ''
+        run: |
+          liquibase \
+            --defaultsFile=liquibase.properties \
+            --changeLogFile=${{ inputs.changeLogFile }} \
+            rollbackCount 1
