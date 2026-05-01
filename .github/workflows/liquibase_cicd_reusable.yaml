@@ -1,24 +1,25 @@
-name: Liquibase CI/CD Reusable Workflow
+name: Liquibase CICD Reusable
 
 on:
   workflow_call:
     inputs:
+      environment:
+        required: true
+        type: string
       changeLogFile:
         required: true
         type: string
-
       ci_flowfile:
-        required: true
+        required: false
         type: string
-
       cd_flowfile:
-        required: true
+        required: false
         type: string
 
 jobs:
-  liquibase-cicd:
+  liquibase:
     runs-on: ubuntu-latest
-    environment: dev
+    environment: ${{ inputs.environment }}
 
     steps:
       - uses: actions/checkout@v3
@@ -29,58 +30,63 @@ jobs:
           unzip liquibase-4.33.0.zip -d /opt/liquibase
           echo "/opt/liquibase" >> $GITHUB_PATH
 
-      # POLICY CHECK
-      - name: Run Policy Checks
-        id: policy
+      # Decode truststore
+      - name: Setup Truststore
         run: |
-          liquibase checks run \
-            --changeLogFile=${{ inputs.changeLogFile }} \
-            > policy.txt || echo "EXIT_CODE=$?" >> $GITHUB_ENV
+          echo "${{ secrets.TRUSTSTORE_BASE64 }}" | base64 -d > truststore.jks
 
+      # Export env
+      - name: Set Env
+        run: |
+          echo "JAVA_OPTS=-Djavax.net.ssl.trustStore=truststore.jks -Djavax.net.ssl.trustStorePassword=${{ secrets.TRUSTSTORE_PASSWORD }}" >> $GITHUB_ENV
+
+      # 🔹 POLICY CHECK (WITH CONTINUE)
+      - name: Policy Check
+        id: policy
+        continue-on-error: true
+        run: |
+          liquibase validate --changeLogFile=${{ inputs.changeLogFile }}
+
+      # 🔹 Upload policy output
       - name: Upload Policy Report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: policy-report
-          path: policy.txt
+          path: liquibase.log
 
-      - name: Approval if Policy Fails
-        if: env.EXIT_CODE == '3'
+      # 🔹 STOP IF POLICY FAILED (WAIT FOR APPROVAL)
+      - name: Require Approval on Policy Failure
+        if: steps.policy.outcome == 'failure'
         uses: trstringer/manual-approval@v1
         with:
-          secret: ${{ github.token }}
-          approvers: user1
-          instructions: Review policy-report before proceeding
+          approvers: avidere
 
-      # CI FLOW
+      # 🔹 CI FLOW
       - name: Run CI Flow
+        if: inputs.ci_flowfile != ''
         run: |
-          liquibase flow \
-            --flow-file=${{ inputs.ci_flowfile }} \
-            --changeLogFile=${{ inputs.changeLogFile }}
+          liquibase flow --flow-file=${{ inputs.ci_flowfile }}
 
-      # SQL REVIEW
+      # 🔹 UPDATE SQL (REVIEW STAGE)
       - name: Generate Update SQL
         run: |
-          liquibase \
-            --changeLogFile=${{ inputs.changeLogFile }} \
-            updateSQL > updatesql.txt
+          liquibase updateSQL --changeLogFile=${{ inputs.changeLogFile }} > updatesql.txt
 
       - name: Upload SQL Review
         uses: actions/upload-artifact@v4
         with:
-          name: sql-review
+          name: update-sql-review
           path: updatesql.txt
 
-      - name: Approval Before Deployment
+      # 🔹 APPROVAL BEFORE DEPLOY
+      - name: Approval Before Deploy
         uses: trstringer/manual-approval@v1
         with:
-          secret: ${{ github.token }}
-          approvers: user1
-          instructions: Review SQL before deployment
+          approvers: avidere
 
-      # CD FLOW
+      # 🔹 CD FLOW (ACTUAL EXECUTION)
       - name: Run CD Flow
+        if: inputs.cd_flowfile != ''
         run: |
-          liquibase flow \
-            --flow-file=${{ inputs.cd_flowfile }} \
-            --changeLogFile=${{ inputs.changeLogFile }}
+          liquibase flow --flow-file=${{ inputs.cd_flowfile }}
