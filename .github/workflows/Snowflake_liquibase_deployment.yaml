@@ -1,0 +1,45 @@
+name: Liquibase Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        type: choice
+        options:
+          - CICD
+          - ROLLBACK
+
+      rollback_type:
+        type: choice
+        options:
+          - one-update
+          - one-changeset
+
+      deployment_id:
+        required: false
+
+      changeset_id:
+        required: false
+
+      author:
+        required: false
+
+jobs:
+
+  cicd:
+    if: inputs.action == 'CICD'
+    uses: ./.github/workflows/liquibase_cicd_reusable.yaml
+    with:
+      changeLogFile: changelog/changelog.xml
+      ci_flowfile: liquibase-ci.flowfile.yaml
+      cd_flowfile: liquibase-cd.flowfile.yaml
+
+  rollback:
+    if: inputs.action == 'ROLLBACK'
+    uses: ./.github/workflows/liquibase_rollback_reusable.yaml
+    with:
+      changeLogFile: changelog/changelog.xml
+      rollback_type: ${{ inputs.rollback_type }}
+      deployment_id: ${{ inputs.deployment_id }}
+      changeset_id: ${{ inputs.changeset_id }}
+      author: ${{ inputs.author }}
