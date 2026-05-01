@@ -23,7 +23,7 @@ jobs:
   ############################################################
   ci-stage:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
+    environment: ${{ github.event.inputs.environment }}
 
     steps:
       - uses: actions/checkout@v3
