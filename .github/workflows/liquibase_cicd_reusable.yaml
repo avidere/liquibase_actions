@@ -39,31 +39,17 @@ jobs:
         run: |
           echo "JAVA_OPTS=-Djavax.net.ssl.trustStore=$PWD/truststore.jks -Djavax.net.ssl.trustStorePassword=${{ secrets.SNOWFLAKE_TRUSTSTORE_PASSWORD }}" >> $GITHUB_ENV
 
-      # 🔥 Dynamic properties
+      # 🔥 Create liquibase.properties
       - name: Create liquibase.properties
         run: |
-          echo "url=${{ secrets.SNOWFLAKE_URL }}" > liquibase.properties
-          echo "username=${{ secrets.SNOWFLAKE_USERNAME }}" >> liquibase.properties
-          echo "password=${{ secrets.SNOWFLAKE_PASSWORD }}" >> liquibase.properties
-          echo "driver=net.snowflake.client.jdbc.SnowflakeDriver" >> liquibase.properties
-          echo "liquibaselicensekey=${{ secrets.LIQUIBASE_LICENSE_KEY }}" >> liquibase.properties
-
-          if [ -n "${{ secrets.SNOWFLAKE_SCHEMA }}" ]; then
-            echo "defaultSchemaName=${{ secrets.SNOWFLAKE_SCHEMA }}" >> liquibase.properties
-          fi
-
-          if [ -n "${{ secrets.SNOWFLAKE_WAREHOUSE }}" ]; then
-            echo "warehouse=${{ secrets.SNOWFLAKE_WAREHOUSE }}" >> liquibase.properties
-          fi
-
-          if [ -n "${{ secrets.SNOWFLAKE_ROLE }}" ]; then
-            echo "role=${{ secrets.SNOWFLAKE_ROLE }}" >> liquibase.properties
-          fi
-
-          echo "contexts=${{ inputs.environment }}" >> liquibase.properties
-          echo "labels=${{ inputs.environment }}" >> liquibase.properties
-          echo "logLevel=info" >> liquibase.properties
-
+          cat <<EOF > liquibase.properties
+          url=${{ secrets.SNOWFLAKE_URL }}
+          username=${{ secrets.SNOWFLAKE_USERNAME }}
+          password=${{ secrets.SNOWFLAKE_PASSWORD }}
+          driver=net.snowflake.client.jdbc.SnowflakeDriver
+          liquibaselicensekey=${{ secrets.LIQUIBASE_LICENSE_KEY }}
+          EOF
+          
       # 🔍 Policy Check
       - name: Policy Check validation 
         id: validate
