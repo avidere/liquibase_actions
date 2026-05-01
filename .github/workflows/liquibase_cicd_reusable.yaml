@@ -65,18 +65,18 @@ jobs:
           echo "logLevel=info" >> liquibase.properties
 
       # 🔍 Policy Check
-      - name: Liquibase Validate
+      - name: Policy Check validation 
         id: validate
         continue-on-error: true
         run: |
-          liquibase --defaultsFile=liquibase.properties validate
+          liquibase --defaultsFile=liquibase.properties checks run --changeLogFile=${{ inputs.changeLogFile }}
 
-      - name: Upload Validation Output
+      - name: Upload checks Output
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: validation-report
-          path: liquibase.log
+          path: Policy_checks_output.txt
 
       - name: Approval on Validation Failure
         if: steps.validate.outcome == 'failure'
