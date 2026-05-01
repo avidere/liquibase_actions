@@ -1,0 +1,33 @@
+name: Liquibase Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [dev, qa, prod]
+
+      rollback_type:
+        type: choice
+        options:
+          - one-update
+          - one-changeset
+
+      deployment_id:
+        required: false
+
+      changeset_id:
+        required: false
+
+      author:
+        required: false
+
+jobs:
+  rollback:
+    uses: ./.github/workflows/liquibase_rollback_reusable.yaml
+    with:
+      environment: ${{ inputs.environment }}
+      rollback_type: ${{ inputs.rollback_type }}
+      deployment_id: ${{ inputs.deployment_id }}
+      changeset_id: ${{ inputs.changeset_id }}
+      author: ${{ inputs.author }}
