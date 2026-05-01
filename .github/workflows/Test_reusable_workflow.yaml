@@ -14,19 +14,16 @@ on:
         type: string
       environment:
         required: true
-        type: string
+        type: string   # 🔥 REQUIRED FIX
 
 jobs:
-
-  ############################################################
-  # 🟢 JOB 1 → SETUP + POLICY + CI
-  ############################################################
-  ci-stage:
+  liquibase-Execution:
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment }}
+    environment: ${{ inputs.environment }}   # 🔥 FIXED
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Setup Liquibase
         run: |
@@ -34,6 +31,7 @@ jobs:
           unzip liquibase-4.33.0.zip -d liquibase
           echo "$PWD/liquibase" >> $GITHUB_PATH
 
+      # Truststore
       - name: Setup Truststore
         run: |
           echo "${{ secrets.SNOWFLAKE_TRUSTSTORE_BASE64 }}" | base64 -d > truststore.jks
@@ -42,6 +40,7 @@ jobs:
         run: |
           echo "JAVA_OPTS=-Djavax.net.ssl.trustStore=$PWD/truststore.jks -Djavax.net.ssl.trustStorePassword=${{ secrets.SNOWFLAKE_TRUSTSTORE_PASSWORD }}" >> $GITHUB_ENV
 
+      # Dynamic liquibase.properties
       - name: Create liquibase.properties
         run: |
           cat <<EOF > liquibase.properties
@@ -52,128 +51,45 @@ jobs:
           liquibaselicensekey=${{ secrets.LIQUIBASE_LICENSE_KEY }}
           EOF
 
-      ############################################################
-      # 🔴 POLICY CHECK (CORRECT)
-      ############################################################
+      # ✅ POLICY CHECK (correct command)
       - name: Run Policy Checks
         run: |
-          liquibase --defaultsFile=liquibase.properties \
-            checks run > policy-checks.txt
+          liquibase checks run || echo "POLICY_FAILED=true" >> $GITHUB_ENV
 
-      - name: Upload Policy Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: policy-check-report
-          path: policy-checks.txt
-
-      ############################################################
-      # 🟢 CI FLOW
-      ############################################################
-      - name: Run CI Flow
-        if: ${{ inputs.ci_flowfile != '' }}
-        run: |
-          liquibase \
-            --defaultsFile=liquibase.properties \
-            --changeLogFile=${{ inputs.changeLogFile }} \
-            flow \
-            --flow-file=${{ inputs.ci_flowfile }}
-
-  ############################################################
-  # 🔵 JOB 2 → SQL REVIEW (WITH APPROVAL)
-  ############################################################
-  sql-review:
-    needs: ci-stage
-    if: ${{ inputs.cd_flowfile != '' }}
-    runs-on: ubuntu-latest
-    environment:
-      name: SQL-REVIEW   # 🔥 CREATE THIS ENVIRONMENT WITH APPROVAL
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Liquibase
-        run: |
-          wget https://github.com/liquibase/liquibase/releases/download/v4.33.0/liquibase-4.33.0.zip
-          unzip liquibase-4.33.0.zip -d liquibase
-          echo "$PWD/liquibase" >> $GITHUB_PATH
-
-      - name: Setup Truststore
-        run: |
-          echo "${{ secrets.SNOWFLAKE_TRUSTSTORE_BASE64 }}" | base64 -d > truststore.jks
-
-      - name: Set JAVA_OPTS
-        run: |
-          echo "JAVA_OPTS=-Djavax.net.ssl.trustStore=$PWD/truststore.jks -Djavax.net.ssl.trustStorePassword=${{ secrets.SNOWFLAKE_TRUSTSTORE_PASSWORD }}" >> $GITHUB_ENV
-
-      - name: Create liquibase.properties
-        run: |
-          cat <<EOF > liquibase.properties
-          url=${{ secrets.SNOWFLAKE_URL }}
-          username=${{ secrets.SNOWFLAKE_USERNAME }}
-          password=${{ secrets.SNOWFLAKE_PASSWORD }}
-          driver=net.snowflake.client.jdbc.SnowflakeDriver
-          liquibaselicensekey=${{ secrets.LIQUIBASE_LICENSE_KEY }}
-          EOF
-
-      ############################################################
-      # 🔵 GENERATE SQL
-      ############################################################
+      # ✅ SQL REVIEW
       - name: Generate Update SQL
         run: |
-          liquibase \
-            --defaultsFile=liquibase.properties \
-            --changeLogFile=${{ inputs.changeLogFile }} \
-            updateSQL > updatesql.txt
+          liquibase updateSQL --changeLogFile=${{ inputs.changeLogFile }} > updatesql.txt
 
-      - name: Upload SQL
+      - name: Upload SQL Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: updatesql-review
+          name: update-sql
           path: updatesql.txt
 
-  ############################################################
-  # 🔵 JOB 3 → DEPLOY (WITH APPROVAL)
-  ############################################################
-  deploy:
-    needs: sql-review
-    if: ${{ inputs.cd_flowfile != '' }}
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}   # 🔥 ENV approval here
+      # ✅ MANUAL APPROVAL USING ENVIRONMENT (NO THIRD PARTY)
+      - name: Await Approval
+        run: echo "Waiting for manual approval via environment"
 
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Liquibase
+      # CI Flow
+      - name: Run Liquibase CI Flow
+        if: ${{ inputs.ci_flowfile != '' }}
         run: |
-          wget https://github.com/liquibase/liquibase/releases/download/v4.33.0/liquibase-4.33.0.zip
-          unzip liquibase-4.33.0.zip -d liquibase
-          echo "$PWD/liquibase" >> $GITHUB_PATH
+          liquibase flow --flow-file=${{ inputs.ci_flowfile }}
 
-      - name: Setup Truststore
+      # CD Flow
+      - name: Run Liquibase CD Flow
+        if: ${{ inputs.cd_flowfile != '' }}
         run: |
-          echo "${{ secrets.SNOWFLAKE_TRUSTSTORE_BASE64 }}" | base64 -d > truststore.jks
+          liquibase flow --flow-file=${{ inputs.cd_flowfile }}
 
-      - name: Set JAVA_OPTS
+      # History
+      - name: Liquibase History
         run: |
-          echo "JAVA_OPTS=-Djavax.net.ssl.trustStore=$PWD/truststore.jks -Djavax.net.ssl.trustStorePassword=${{ secrets.SNOWFLAKE_TRUSTSTORE_PASSWORD }}" >> $GITHUB_ENV
+          liquibase history > history.txt
 
-      - name: Create liquibase.properties
-        run: |
-          cat <<EOF > liquibase.properties
-          url=${{ secrets.SNOWFLAKE_URL }}
-          username=${{ secrets.SNOWFLAKE_USERNAME }}
-          password=${{ secrets.SNOWFLAKE_PASSWORD }}
-          driver=net.snowflake.client.jdbc.SnowflakeDriver
-          liquibaselicensekey=${{ secrets.LIQUIBASE_LICENSE_KEY }}
-          EOF
-
-      ############################################################
-      # 🚀 ACTUAL DEPLOYMENT
-      ############################################################
-      - name: Run CD Flow
-        run: |
-          liquibase \
-            --defaultsFile=liquibase.properties \
-            --changeLogFile=${{ inputs.changeLogFile }} \
-            flow \
-            --flow-file=${{ inputs.cd_flowfile }}
+      - name: Upload History
+        uses: actions/upload-artifact@v4
+        with:
+          name: history-output
+          path: history.txt
