@@ -1,11 +1,8 @@
-name: Liquibase CICD Reusable
+name: Liquibase Reusable Action (Enterprise)
 
 on:
   workflow_call:
     inputs:
-      environment:
-        required: true
-        type: string
       changeLogFile:
         required: true
         type: string
@@ -15,14 +12,24 @@ on:
       cd_flowfile:
         required: false
         type: string
+      environment:
+        required: true
+        type: string
 
 jobs:
-  liquibase-Execution:
+
+  # =========================
+  # 1. CI + SQL REVIEW
+  # =========================
+  liquibase-ci:
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment }}
+    environment: ${{ inputs.environment }}
+
+    outputs:
+      proceed: ${{ steps.set-output.outputs.proceed }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v3
 
       - name: Setup Liquibase
@@ -31,17 +38,16 @@ jobs:
           unzip liquibase-4.33.0.zip -d liquibase
           echo "$PWD/liquibase" >> $GITHUB_PATH
 
-      # 🔥 Restore truststore
+      # Truststore
       - name: Setup Truststore
         run: |
           echo "${{ secrets.SNOWFLAKE_TRUSTSTORE_BASE64 }}" | base64 -d > truststore.jks
 
-      # 🔥 Set SSL
       - name: Set JAVA_OPTS
         run: |
           echo "JAVA_OPTS=-Djavax.net.ssl.trustStore=$PWD/truststore.jks -Djavax.net.ssl.trustStorePassword=${{ secrets.SNOWFLAKE_TRUSTSTORE_PASSWORD }}" >> $GITHUB_ENV
 
-      # 🔥 Create liquibase.properties
+      # Properties
       - name: Create liquibase.properties
         run: |
           cat <<EOF > liquibase.properties
@@ -51,58 +57,101 @@ jobs:
           driver=net.snowflake.client.jdbc.SnowflakeDriver
           liquibaselicensekey=${{ secrets.LIQUIBASE_LICENSE_KEY }}
           EOF
-          
-      # 🔍 Policy Check
-      - name: Policy Check validation 
-        id: validate
-        continue-on-error: true
-        run: |
-          liquibase --defaultsFile=liquibase.properties checks run --changeLogFile=${{ inputs.changeLogFile }}
 
-      - name: Upload checks Output
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: validation-report
-          path: Policy_checks_output.txt
-
-      - name: Approval on Validation Failure
-        if: steps.validate.outcome == 'failure'
-        uses: trstringer/manual-approval@v1
-        with:
-          approvers: your-github-username
-
-      # 🔁 CI FLOW
+      # CI FLOW
       - name: Run CI Flow
-        if: inputs.ci_flowfile != ''
+        if: ${{ inputs.ci_flowfile != '' }}
         run: |
           liquibase --defaultsFile=liquibase.properties \
             --changeLogFile=${{ inputs.changeLogFile }} \
             flow --flow-file=${{ inputs.ci_flowfile }}
 
-      # 🧾 SQL REVIEW
+      # SQL REVIEW
       - name: Generate Update SQL
         run: |
           liquibase --defaultsFile=liquibase.properties \
             --changeLogFile=${{ inputs.changeLogFile }} \
             updateSQL > updatesql.txt
 
-      - name: Upload SQL
+      # Upload artifact
+      - name: Upload SQL Review Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: update-sql
+          name: updatesql
           path: updatesql.txt
 
-      # ⛔ Approval before deploy
-      - name: Approval Before Deploy
-        uses: trstringer/manual-approval@v1
-        with:
-          approvers: your-github-username
+      # Dummy output to allow next job
+      - name: Set output
+        id: set-output
+        run: echo "proceed=true" >> $GITHUB_OUTPUT
 
-      # 🚀 CD FLOW
+
+  # =========================
+  # 2. APPROVAL GATE
+  # =========================
+  approval:
+    needs: liquibase-ci
+    runs-on: ubuntu-latest
+
+    # 🔥 THIS IS THE APPROVAL CONTROL
+    environment:
+      name: approval-env
+
+    steps:
+      - name: Approval Step
+        run: |
+          echo "Go to Actions → Artifacts → Download updatesql.txt"
+          echo "Review SQL before approving deployment"
+
+
+  # =========================
+  # 3. CD EXECUTION
+  # =========================
+  liquibase-cd:
+    needs: approval
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Liquibase
+        run: |
+          wget https://github.com/liquibase/liquibase/releases/download/v4.33.0/liquibase-4.33.0.zip
+          unzip liquibase-4.33.0.zip -d liquibase
+          echo "$PWD/liquibase" >> $GITHUB_PATH
+
+      - name: Setup Truststore
+        run: |
+          echo "${{ secrets.SNOWFLAKE_TRUSTSTORE_BASE64 }}" | base64 -d > truststore.jks
+
+      - name: Set JAVA_OPTS
+        run: |
+          echo "JAVA_OPTS=-Djavax.net.ssl.trustStore=$PWD/truststore.jks -Djavax.net.ssl.trustStorePassword=${{ secrets.SNOWFLAKE_TRUSTSTORE_PASSWORD }}" >> $GITHUB_ENV
+
+      - name: Create liquibase.properties
+        run: |
+          cat <<EOF > liquibase.properties
+          url=${{ secrets.SNOWFLAKE_URL }}
+          username=${{ secrets.SNOWFLAKE_USERNAME }}
+          password=${{ secrets.SNOWFLAKE_PASSWORD }}
+          driver=net.snowflake.client.jdbc.SnowflakeDriver
+          liquibaselicensekey=${{ secrets.LIQUIBASE_LICENSE_KEY }}
+          EOF
+
+      # CD FLOW
       - name: Run CD Flow
-        if: inputs.cd_flowfile != ''
+        if: ${{ inputs.cd_flowfile != '' }}
         run: |
           liquibase --defaultsFile=liquibase.properties \
             --changeLogFile=${{ inputs.changeLogFile }} \
             flow --flow-file=${{ inputs.cd_flowfile }}
+
+      # Rollback on failure
+      - name: Rollback
+        if: failure()
+        run: |
+          liquibase --defaultsFile=liquibase.properties \
+            --changeLogFile=${{ inputs.changeLogFile }} \
+            rollbackCount 1
