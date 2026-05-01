@@ -1,0 +1,86 @@
+name: Liquibase CI/CD Reusable Workflow
+
+on:
+  workflow_call:
+    inputs:
+      changeLogFile:
+        required: true
+        type: string
+
+      ci_flowfile:
+        required: true
+        type: string
+
+      cd_flowfile:
+        required: true
+        type: string
+
+jobs:
+  liquibase-cicd:
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Liquibase
+        run: |
+          wget https://github.com/liquibase/liquibase/releases/download/v4.33.0/liquibase-4.33.0.zip
+          unzip liquibase-4.33.0.zip -d /opt/liquibase
+          echo "/opt/liquibase" >> $GITHUB_PATH
+
+      # POLICY CHECK
+      - name: Run Policy Checks
+        id: policy
+        run: |
+          liquibase checks run \
+            --changeLogFile=${{ inputs.changeLogFile }} \
+            > policy.txt || echo "EXIT_CODE=$?" >> $GITHUB_ENV
+
+      - name: Upload Policy Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: policy-report
+          path: policy.txt
+
+      - name: Approval if Policy Fails
+        if: env.EXIT_CODE == '3'
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ github.token }}
+          approvers: user1
+          instructions: Review policy-report before proceeding
+
+      # CI FLOW
+      - name: Run CI Flow
+        run: |
+          liquibase flow \
+            --flow-file=${{ inputs.ci_flowfile }} \
+            --changeLogFile=${{ inputs.changeLogFile }}
+
+      # SQL REVIEW
+      - name: Generate Update SQL
+        run: |
+          liquibase \
+            --changeLogFile=${{ inputs.changeLogFile }} \
+            updateSQL > updatesql.txt
+
+      - name: Upload SQL Review
+        uses: actions/upload-artifact@v4
+        with:
+          name: sql-review
+          path: updatesql.txt
+
+      - name: Approval Before Deployment
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ github.token }}
+          approvers: user1
+          instructions: Review SQL before deployment
+
+      # CD FLOW
+      - name: Run CD Flow
+        run: |
+          liquibase flow \
+            --flow-file=${{ inputs.cd_flowfile }} \
+            --changeLogFile=${{ inputs.changeLogFile }}
